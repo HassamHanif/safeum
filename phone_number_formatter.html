@@ -5,11 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phone Number Formatter</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .group-box {
-            margin-bottom: 15px;
+        .min-vh-50 {
+            min-height: 50vh;
+        }
+
+        .container {
+            max-width: 800px;
         }
     </style>
 </head>
@@ -18,76 +21,71 @@
     <div class="container mt-5">
         <h1 class="text-center mb-4">Phone Number Formatter</h1>
         <div class="mb-3">
-            <label for="inputText" class="form-label">Enter text containing phone numbers:</label>
-            <textarea id="inputText" class="form-control" rows="5" placeholder="Enter numbers separated by commas..."></textarea>
+            <label for="textInput" class="form-label">Enter text containing phone numbers:</label>
+            <textarea id="textInput" class="form-control" rows="5" placeholder="Paste your text here..."></textarea>
         </div>
         <div class="mb-3">
             <label for="groupSize" class="form-label">Enter the number of phone numbers per group:</label>
-            <input type="number" id="groupSize" class="form-control" placeholder="Enter group size">
+            <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
         </div>
-        <button id="convertBtn" class="btn btn-primary">Convert</button>
-        <div id="resultContainer" class="mt-4"></div>
+        <div class="mb-3">
+            <button id="convertBtn" class="btn btn-primary">Convert</button>
+            <button id="copyBtn" class="btn btn-secondary">Copy</button>
+        </div>
+        <div class="mb-3">
+            <label for="outputText" class="form-label">Formatted Phone Numbers:</label>
+            <textarea id="outputText" class="form-control" rows="5" readonly></textarea>
+        </div>
+        <div id="countDisplay" class="text-center"></div>
     </div>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('convertBtn').addEventListener('click', function () {
-        const inputText = document.getElementById('inputText').value;
-        const groupSize = parseInt(document.getElementById('groupSize').value, 10);
-        const resultContainer = document.getElementById('resultContainer');
+        document.addEventListener('DOMContentLoaded', function () {
+            const textInput = document.getElementById('textInput');
+            const groupSizeInput = document.getElementById('groupSize');
+            const outputText = document.getElementById('outputText');
+            const countDisplay = document.getElementById('countDisplay');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
 
-        // Clear previous results
-        resultContainer.innerHTML = '';
+            convertBtn.addEventListener('click', function () {
+                const text = textInput.value;
+                const groupSize = parseInt(groupSizeInput.value, 10);
 
-        if (!inputText || isNaN(groupSize) || groupSize <= 0) {
-            alert('Please enter valid numbers and group size!');
-            return;
-        }
+                if (!text.trim()) {
+                    alert('Please enter text containing phone numbers.');
+                    return;
+                }
 
-        // Split input into numbers and clean any empty strings or spaces
-        const numbers = inputText
-            .split(',')
-            .map(num => num.trim()) // Remove extra spaces
-            .filter(num => num !== ''); // Remove empty entries
+                if (isNaN(groupSize) || groupSize <= 0) {
+                    alert('Please enter a valid group size.');
+                    return;
+                }
 
-        const groups = [];
+                const regex = /9944[ \d]{8,}/g;
+                const matches = text.match(regex) || [];
+                const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
-        // Create groups of the specified size
-        for (let i = 0; i < numbers.length; i += groupSize) {
-            groups.push(numbers.slice(i, i + groupSize));
-        }
+                if (cleanedNumbers.length === 0) {
+                    alert('No valid phone numbers found in the text.');
+                    return;
+                }
 
-        // Create boxes for each group
-        groups.forEach((group, index) => {
-            const groupBox = document.createElement('div');
-            groupBox.className = 'group-box';
+                const groups = [];
+                for (let i = 0; i < cleanedNumbers.length; i += groupSize) {
+                    groups.push(cleanedNumbers.slice(i, i + groupSize).join(','));
+                }
 
-            const groupTitle = document.createElement('h5');
-            groupTitle.innerText = `Group ${index + 1}`;
-            groupBox.appendChild(groupTitle);
-
-            const groupTextArea = document.createElement('textarea');
-            groupTextArea.className = 'form-control mb-2';
-            groupTextArea.rows = 3;
-            groupTextArea.readOnly = true;
-            groupTextArea.value = group.join(',');
-            groupBox.appendChild(groupTextArea);
-
-            const copyButton = document.createElement('button');
-            copyButton.className = 'btn btn-secondary';
-            copyButton.innerText = 'Copy';
-            copyButton.addEventListener('click', function () {
-                groupTextArea.select();
-                document.execCommand('copy');
-                alert(`Group ${index + 1} copied to clipboard!`);
+                outputText.value = groups.join('\n\n');
+                countDisplay.textContent = `Total Count of Phone Numbers: ${cleanedNumbers.length}`;
             });
-            groupBox.appendChild(copyButton);
 
-            resultContainer.appendChild(groupBox);
+            copyBtn.addEventListener('click', function () {
+                outputText.select();
+                document.execCommand('copy');
+                alert('Result copied to clipboard.');
+            });
         });
-    });
-
     </script>
 </body>
 
