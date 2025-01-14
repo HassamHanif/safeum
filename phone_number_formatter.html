@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Number Formatter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .min-vh-50 {
+            min-height: 50vh;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Phone Number Formatter</h1>
+        <div class="mb-3">
+            <label for="textInput" class="form-label">Enter text containing phone numbers:</label>
+            <textarea id="textInput" class="form-control" rows="5" placeholder="Paste your text here..."></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="groupSize" class="form-label">Enter the number of phone numbers per group:</label>
+            <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
+        </div>
+        <div class="mb-3">
+            <button id="convertBtn" class="btn btn-primary">Convert</button>
+            <button id="copyBtn" class="btn btn-secondary">Copy</button>
+        </div>
+        <div class="mb-3">
+            <label for="outputText" class="form-label">Formatted Phone Numbers:</label>
+            <textarea id="outputText" class="form-control" rows="5" readonly></textarea>
+        </div>
+        <div id="countDisplay" class="text-center"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const textInput = document.getElementById('textInput');
+            const groupSizeInput = document.getElementById('groupSize');
+            const outputText = document.getElementById('outputText');
+            const countDisplay = document.getElementById('countDisplay');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
+
+            convertBtn.addEventListener('click', function () {
+                const text = textInput.value;
+                const groupSize = parseInt(groupSizeInput.value, 10);
+
+                if (!text.trim()) {
+                    alert('Please enter text containing phone numbers.');
+                    return;
+                }
+
+                if (isNaN(groupSize) || groupSize <= 0) {
+                    alert('Please enter a valid group size.');
+                    return;
+                }
+
+                const regex = /9944[ \d]{8,}/g;
+                const matches = text.match(regex) || [];
+                const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
+
+                if (cleanedNumbers.length === 0) {
+                    alert('No valid phone numbers found in the text.');
+                    return;
+                }
+
+                const groups = [];
+                for (let i = 0; i < cleanedNumbers.length; i += groupSize) {
+                    groups.push(cleanedNumbers.slice(i, i + groupSize).join(','));
+                }
+
+                outputText.value = groups.join('\n\n');
+                countDisplay.textContent = `Total Count of Phone Numbers: ${cleanedNumbers.length}`;
+            });
+
+            copyBtn.addEventListener('click', function () {
+                outputText.select();
+                document.execCommand('copy');
+                alert('Result copied to clipboard.');
+            });
+        });
+    </script>
+</body>
+
+</html>
