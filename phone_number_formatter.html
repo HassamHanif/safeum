@@ -33,55 +33,61 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.getElementById('convertBtn').addEventListener('click', function () {
-            const inputText = document.getElementById('inputText').value;
-            const groupSize = parseInt(document.getElementById('groupSize').value, 10);
-            const resultContainer = document.getElementById('resultContainer');
+        const inputText = document.getElementById('inputText').value;
+        const groupSize = parseInt(document.getElementById('groupSize').value, 10);
+        const resultContainer = document.getElementById('resultContainer');
 
-            // Clear previous results
-            resultContainer.innerHTML = '';
+        // Clear previous results
+        resultContainer.innerHTML = '';
 
-            if (!inputText || isNaN(groupSize) || groupSize <= 0) {
-                alert('Please enter valid numbers and group size!');
-                return;
-            }
+        if (!inputText || isNaN(groupSize) || groupSize <= 0) {
+            alert('Please enter valid numbers and group size!');
+            return;
+        }
 
-            // Split input into numbers and process them
-            const numbers = inputText.split(',').map(num => num.trim());
-            const groups = [];
+        // Split input into numbers and clean any empty strings or spaces
+        const numbers = inputText
+            .split(',')
+            .map(num => num.trim()) // Remove extra spaces
+            .filter(num => num !== ''); // Remove empty entries
 
-            for (let i = 0; i < numbers.length; i += groupSize) {
-                groups.push(numbers.slice(i, i + groupSize));
-            }
+        const groups = [];
 
-            // Create boxes for each group
-            groups.forEach((group, index) => {
-                const groupBox = document.createElement('div');
-                groupBox.className = 'group-box';
+        // Create groups of the specified size
+        for (let i = 0; i < numbers.length; i += groupSize) {
+            groups.push(numbers.slice(i, i + groupSize));
+        }
 
-                const groupTitle = document.createElement('h5');
-                groupTitle.innerText = `Group ${index + 1}`;
-                groupBox.appendChild(groupTitle);
+        // Create boxes for each group
+        groups.forEach((group, index) => {
+            const groupBox = document.createElement('div');
+            groupBox.className = 'group-box';
 
-                const groupTextArea = document.createElement('textarea');
-                groupTextArea.className = 'form-control mb-2';
-                groupTextArea.rows = 3;
-                groupTextArea.readOnly = true;
-                groupTextArea.value = group.join(',');
-                groupBox.appendChild(groupTextArea);
+            const groupTitle = document.createElement('h5');
+            groupTitle.innerText = `Group ${index + 1}`;
+            groupBox.appendChild(groupTitle);
 
-                const copyButton = document.createElement('button');
-                copyButton.className = 'btn btn-secondary';
-                copyButton.innerText = 'Copy';
-                copyButton.addEventListener('click', function () {
-                    groupTextArea.select();
-                    document.execCommand('copy');
-                    alert(`Group ${index + 1} copied to clipboard!`);
-                });
-                groupBox.appendChild(copyButton);
+            const groupTextArea = document.createElement('textarea');
+            groupTextArea.className = 'form-control mb-2';
+            groupTextArea.rows = 3;
+            groupTextArea.readOnly = true;
+            groupTextArea.value = group.join(',');
+            groupBox.appendChild(groupTextArea);
 
-                resultContainer.appendChild(groupBox);
+            const copyButton = document.createElement('button');
+            copyButton.className = 'btn btn-secondary';
+            copyButton.innerText = 'Copy';
+            copyButton.addEventListener('click', function () {
+                groupTextArea.select();
+                document.execCommand('copy');
+                alert(`Group ${index + 1} copied to clipboard!`);
             });
+            groupBox.appendChild(copyButton);
+
+            resultContainer.appendChild(groupBox);
         });
+    });
+
     </script>
 </body>
 
