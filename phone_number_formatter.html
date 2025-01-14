@@ -14,6 +14,17 @@
         .container {
             max-width: 800px;
         }
+
+        .phone-group {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -30,23 +41,18 @@
         </div>
         <div class="mb-3">
             <button id="convertBtn" class="btn btn-primary">Convert</button>
-            <button id="copyBtn" class="btn btn-secondary">Copy</button>
         </div>
-        <div class="mb-3">
-            <label for="outputText" class="form-label">Formatted Phone Numbers:</label>
-            <textarea id="outputText" class="form-control" rows="5" readonly></textarea>
-        </div>
-        <div id="countDisplay" class="text-center"></div>
+        <div id="outputContainer" class="mt-4"></div>
+        <div id="countDisplay" class="text-center mt-3"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const textInput = document.getElementById('textInput');
             const groupSizeInput = document.getElementById('groupSize');
-            const outputText = document.getElementById('outputText');
+            const outputContainer = document.getElementById('outputContainer');
             const countDisplay = document.getElementById('countDisplay');
             const convertBtn = document.getElementById('convertBtn');
-            const copyBtn = document.getElementById('copyBtn');
 
             convertBtn.addEventListener('click', function () {
                 const text = textInput.value;
@@ -71,19 +77,37 @@
                     return;
                 }
 
+                outputContainer.innerHTML = ''; // Clear previous output
                 const groups = [];
                 for (let i = 0; i < cleanedNumbers.length; i += groupSize) {
-                    groups.push(cleanedNumbers.slice(i, i + groupSize).join(','));
+                    groups.push(cleanedNumbers.slice(i, i + groupSize));
                 }
 
-                outputText.value = groups.join('\n\n');
-                countDisplay.textContent = `Total Count of Phone Numbers: ${cleanedNumbers.length}`;
-            });
+                groups.forEach((group, index) => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.classList.add('phone-group');
 
-            copyBtn.addEventListener('click', function () {
-                outputText.select();
-                document.execCommand('copy');
-                alert('Result copied to clipboard.');
+                    const groupText = document.createElement('textarea');
+                    groupText.classList.add('form-control');
+                    groupText.rows = 3;
+                    groupText.readOnly = true;
+                    groupText.value = group.join(',');
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.classList.add('btn', 'btn-secondary', 'copy-btn');
+                    copyBtn.textContent = `Copy Group ${index + 1}`;
+                    copyBtn.addEventListener('click', function () {
+                        groupText.select();
+                        document.execCommand('copy');
+                        alert(`Group ${index + 1} copied to clipboard.`);
+                    });
+
+                    groupDiv.appendChild(groupText);
+                    groupDiv.appendChild(copyBtn);
+                    outputContainer.appendChild(groupDiv);
+                });
+
+                countDisplay.textContent = `Total Count of Phone Numbers: ${cleanedNumbers.length}`;
             });
         });
     </script>
