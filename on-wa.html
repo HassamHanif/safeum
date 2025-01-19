@@ -85,34 +85,50 @@
             const totalCount = numbers.length;
             document.getElementById('totalCount').textContent = `Total Numbers: ${totalCount}`;
 
-            const response = await fetch('https://my-backend.zapto.org/check', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ numbers })
-            });
-            const { registered, notRegistered } = await response.json();
-            
-            // Display registered and not registered numbers
-            document.getElementById('registered').value = registered.join('\n');
-            document.getElementById('notRegistered').value = notRegistered.join('\n');
+            try {
+                const response = await fetch('https://my-backend.zapto.org:3000/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numbers }),
+                    credentials: 'include'  // Allow credentials (cookies or session data)
+                });
 
-            // Display counts for registered and not registered numbers
-            document.getElementById('registeredCount').textContent = `Registered Numbers: ${registered.length}`;
-            document.getElementById('notRegisteredCount').textContent = `Not Registered Numbers: ${notRegistered.length}`;
+                // Handle the response
+                const { registered, notRegistered } = await response.json();
+                
+                // Display registered and not registered numbers
+                document.getElementById('registered').value = registered.join('\n');
+                document.getElementById('notRegistered').value = notRegistered.join('\n');
+
+                // Display counts for registered and not registered numbers
+                document.getElementById('registeredCount').textContent = `Registered Numbers: ${registered.length}`;
+                document.getElementById('notRegisteredCount').textContent = `Not Registered Numbers: ${notRegistered.length}`;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while checking the numbers. Please try again later.');
+            }
         }
 
+        // Copy registered numbers to clipboard
         document.getElementById('copyRegistered').addEventListener('click', function () {
             const registeredText = document.getElementById('registered');
-            registeredText.select();
-            document.execCommand('copy');
-            alert('Registered numbers copied to clipboard.');
+            navigator.clipboard.writeText(registeredText.value).then(() => {
+                alert('Registered numbers copied to clipboard.');
+            }).catch(err => {
+                console.error('Error copying text: ', err);
+                alert('Failed to copy registered numbers.');
+            });
         });
 
+        // Copy not registered numbers to clipboard
         document.getElementById('copyNotRegistered').addEventListener('click', function () {
             const notRegisteredText = document.getElementById('notRegistered');
-            notRegisteredText.select();
-            document.execCommand('copy');
-            alert('Not registered numbers copied to clipboard.');
+            navigator.clipboard.writeText(notRegisteredText.value).then(() => {
+                alert('Not registered numbers copied to clipboard.');
+            }).catch(err => {
+                console.error('Error copying text: ', err);
+                alert('Failed to copy not registered numbers.');
+            });
         });
     </script>
 </body>
