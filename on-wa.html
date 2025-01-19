@@ -85,7 +85,7 @@
             const totalCount = numbers.length;
             document.getElementById('totalCount').textContent = `Total Numbers: ${totalCount}`;
 
-            const response = await fetch('https://3.106.229.168:3000/check', {
+            const response = await fetch('https://my-backend.zapto.org/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ numbers })
