@@ -81,15 +81,18 @@
                 const matches = text.match(regex) || [];
                 const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
-                if (cleanedNumbers.length === 0) {
+                // Use a Set to remove duplicates
+                const uniqueNumbers = [...new Set(cleanedNumbers)];
+
+                if (uniqueNumbers.length === 0) {
                     alert('No valid phone numbers found in the text.');
                     return;
                 }
 
                 outputContainer.innerHTML = ''; // Clear previous output
                 const groups = [];
-                for (let i = 0; i < cleanedNumbers.length; i += groupSize) {
-                    groups.push(cleanedNumbers.slice(i, i + groupSize));
+                for (let i = 0; i < uniqueNumbers.length; i += groupSize) {
+                    groups.push(uniqueNumbers.slice(i, i + groupSize));
                 }
 
                 groups.forEach((group, index) => {
@@ -116,7 +119,7 @@
                     outputContainer.appendChild(groupDiv);
                 });
 
-                countDisplay.textContent = `Total Count of Phone Numbers: ${cleanedNumbers.length}`;
+                countDisplay.textContent = `Total Count of Unique Phone Numbers: ${uniqueNumbers.length}`;
             });
         });
     </script>
