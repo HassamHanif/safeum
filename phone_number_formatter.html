@@ -46,6 +46,13 @@
             <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
         </div>
         <div class="mb-3">
+            <label for="countryCode" class="form-label">Select country code:</label>
+            <select id="countryCode" class="form-select">
+                <option value="994">Azerbaijan (994)</option>
+                <option value="92">Pakistan (92)</option>
+            </select>
+        </div>
+        <div class="mb-3">
             <button id="convertBtn" class="btn btn-primary w-100">Format Phone Numbers</button>
         </div>
         <div id="outputContainer" class="mt-4"></div>
@@ -59,6 +66,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const textInput = document.getElementById('textInput');
             const groupSizeInput = document.getElementById('groupSize');
+            const countryCodeSelect = document.getElementById('countryCode');
             const outputContainer = document.getElementById('outputContainer');
             const countDisplay = document.getElementById('countDisplay');
             const convertBtn = document.getElementById('convertBtn');
@@ -66,6 +74,7 @@
             convertBtn.addEventListener('click', function () {
                 const text = textInput.value.trim();
                 const groupSize = parseInt(groupSizeInput.value, 10);
+                const countryCode = countryCodeSelect.value;
 
                 if (!text) {
                     alert('Please enter text containing phone numbers.');
@@ -77,7 +86,14 @@
                     return;
                 }
 
-                const regex = /9944[ \d]{8,}/g;
+                // Create regex based on selected country code
+                let regex;
+                if (countryCode === '994') {
+                    regex = /994[ \d]{8,}/g; // Matches 994 followed by 8+ digits/spaces
+                } else if (countryCode === '92') {
+                    regex = /92[ \d]{9,}/g; // Matches 92 followed by 9+ digits/spaces (Pakistan numbers are longer)
+                }
+
                 const matches = text.match(regex) || [];
                 const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
