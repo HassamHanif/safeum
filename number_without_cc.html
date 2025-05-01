@@ -93,7 +93,8 @@
                     return digitsOnly; // Return as-is if no country code match
                 });
 
-                outputNumbers.value = processedNumbers.join(',\n');
+                // Output all numbers in a single line separated by commas
+                outputNumbers.value = processedNumbers.join(', ');
             });
 
             copyBtn.addEventListener('click', function () {
