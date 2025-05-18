@@ -50,6 +50,7 @@
             <select id="countryCode" class="form-select">
                 <option value="994">Azerbaijan (994)</option>
                 <option value="92">Pakistan (92)</option>
+                <option value="371">Latvia (371)</option>
             </select>
         </div>
         <div class="mb-3">
@@ -91,14 +92,24 @@
                 if (countryCode === '994') {
                     regex = /994[ \d]{8,}/g; // Matches 994 followed by 8+ digits/spaces
                 } else if (countryCode === '92') {
-                    regex = /92[ \d]{9,}/g; // Matches 92 followed by 9+ digits/spaces (Pakistan numbers are longer)
+                    regex = /92[ \d]{9,}/g; // Matches 92 followed by 9+ digits/spaces
+                } else if (countryCode === '371') {
+                    regex = /371[ \d]{8}/g; // Matches 371 followed by exactly 8 digits/spaces (11 digits total)
                 }
 
                 const matches = text.match(regex) || [];
                 const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
+                // Validate number length for Latvia
+                const validNumbers = cleanedNumbers.filter(num => {
+                    if (countryCode === '371') {
+                        return num.length === 11; // Must be exactly 11 digits for Latvia
+                    }
+                    return true; // No additional validation for other countries
+                });
+
                 // Use a Set to remove duplicates
-                const uniqueNumbers = [...new Set(cleanedNumbers)];
+                const uniqueNumbers = [...new Set(validNumbers)];
 
                 if (uniqueNumbers.length === 0) {
                     alert('No valid phone numbers found in the text.');
