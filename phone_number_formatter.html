@@ -48,9 +48,16 @@
         <div class="mb-3">
             <label for="countryCode" class="form-label">Select country code:</label>
             <select id="countryCode" class="form-select">
-                <option value="994">Azerbaijan (994)</option>
-                <option value="92">Pakistan (92)</option>
-                <option value="371">Latvia (371)</option>
+                <option value="994">Azerbaijan (+994)</option>
+                <option value="92">Pakistan (+92)</option>
+                <option value="371">Latvia (+371)</option>
+                <option value="966">Saudi Arabia (+966)</option>
+                <option value="967">Yemen (+967)</option>
+                <option value="7">Russia (+7)</option>
+                <option value="20">Egypt (+20)</option>
+                <option value="235">Chad (+235)</option>
+                <option value="27">South Africa (+27)</option>
+                <option value="964">Iraq (+964)</option>
             </select>
         </div>
         <div class="mb-3">
@@ -89,23 +96,45 @@
 
                 // Create regex based on selected country code
                 let regex;
+                let expectedLength;
                 if (countryCode === '994') {
-                    regex = /994[ \d]{8,}/g; // Matches 994 followed by 8+ digits/spaces
+                    regex = /994[ \d]{8,}/g; // Azerbaijan: +994 followed by 9 digits
+                    expectedLength = 12;
                 } else if (countryCode === '92') {
-                    regex = /92[ \d]{9,}/g; // Matches 92 followed by 9+ digits/spaces
+                    regex = /92[ \d]{9,}/g; // Pakistan: +92 followed by 10 digits
+                    expectedLength = 12;
                 } else if (countryCode === '371') {
-                    regex = /371[ \d]{8}/g; // Matches 371 followed by exactly 8 digits/spaces (11 digits total)
+                    regex = /371[ \d]{8}/g; // Latvia: +371 followed by exactly 8 digits
+                    expectedLength = 11;
+                } else if (countryCode === '966') {
+                    regex = /966[ \d]{8,}/g; // Saudi Arabia: +966 followed by 9 digits
+                    expectedLength = 12;
+                } else if (countryCode === '967') {
+                    regex = /967[ \d]{8,}/g; // Yemen: +967 followed by 9 digits
+                    expectedLength = 12;
+                } else if (countryCode === '7') {
+                    regex = /7[ \d]{9,}/g; // Russia: +7 followed by 10 digits
+                    expectedLength = 11;
+                } else if (countryCode === '20') {
+                    regex = /20[ \d]{8,}/g; // Egypt: +20 followed by 10 digits
+                    expectedLength = 12;
+                } else if (countryCode === '235') {
+                    regex = /235[ \d]{7,}/g; // Chad: +235 followed by 8 digits
+                    expectedLength = 11;
+                } else if (countryCode === '27') {
+                    regex = /27[ \d]{8,}/g; // South Africa: +27 followed by 9 digits
+                    expectedLength = 11;
+                } else if (countryCode === '964') {
+                    regex = /964[ \d]{8,}/g; // Iraq: +964 followed by 9 digits
+                    expectedLength = 12;
                 }
 
                 const matches = text.match(regex) || [];
                 const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
-                // Validate number length for Latvia
+                // Validate number length based on country code
                 const validNumbers = cleanedNumbers.filter(num => {
-                    if (countryCode === '371') {
-                        return num.length === 11; // Must be exactly 11 digits for Latvia
-                    }
-                    return true; // No additional validation for other countries
+                    return num.length === expectedLength;
                 });
 
                 // Use a Set to remove duplicates
