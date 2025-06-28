@@ -159,7 +159,8 @@
                     groupText.classList.add('form-control');
                     groupText.rows = 3;
                     groupText.readOnly = true;
-                    groupText.value = group.join(',');
+                    // Add "+" before each number in the group
+                    groupText.value = group.map(num => `+${num}`).join(',');
 
                     const copyBtn = document.createElement('button');
                     copyBtn.classList.add('btn', 'btn-secondary', 'copy-btn');
