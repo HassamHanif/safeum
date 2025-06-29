@@ -5,10 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phone Number Formatter</title>
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- intl-tel-input CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
     <style>
         .min-vh-50 {
             min-height: 50vh;
@@ -34,134 +31,372 @@
             resize: none;
         }
 
-        /* Adjust intl-tel-input dropdown width */
-        .iti {
-            width: 100%;
+        .dropdown-container {
+            position: relative;
+        }
+
+        .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            display: none;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .flag {
+            margin-right: 8px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Phone Number Formatter</h1>
-        <div class="mb-3">
-            <label for="textInput" class="form-label">Enter text containing phone numbers:</label>
-            <textarea id="textInput" class="form-control" rows="5" placeholder="Paste your text here..."></textarea>
-        </div>
-        <div class="mb-3">
-            <label for="groupSize" class="form-label">Enter the number of phone numbers per group:</label>
-            <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
-        </div>
-        <div class="mb-3">
-            <label for="countryCode" class="form-label">Select country code (type to search):</label>
-            <select id="countryCode" class="form-select"></select>
-        </div>
-        <div class="mb-3">
-            <button id="convertBtn" class="btn btn-primary w-100">Format Phone Numbers</button>
-        </div>
-        <div id="outputContainer" class="mt-4"></div>
-        <div id="countDisplay" class="text-center mt-3 text-muted"></div>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Phone Number Formatter</h1>
+    <div class="mb-3">
+        <label for="textInput" class="form-label">Enter text containing phone numbers:</label>
+        <textarea id="textInput" class="form-control" rows="5" placeholder="Paste your text here..."></textarea>
     </div>
+    <div class="mb-3">
+        <label for="groupSize" class="form-label">Enter the number of phone numbers per group:</label>
+        <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
+    </div>
+    <div class="mb-3">
+        <label for="countrySearch" class="form-label">Select country code (type to search by name or code):</label>
+        <div class="dropdown-container">
+            <input type="text" id="countrySearch" class="form-control" placeholder="Search country...">
+            <div id="dropdownList" class="dropdown-list"></div>
+        </div>
+        <input type="hidden" id="selectedDialCode">
+    </div>
+    <div class="mb-3">
+        <button id="convertBtn" class="btn btn-primary w-100">Format Phone Numbers</button>
+    </div>
+    <div id="outputContainer" class="mt-4"></div>
+    <div id="countDisplay" class="text-center mt-3 text-muted"></div>
+</div>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- intl-tel-input JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"></script>
+<script>
+    const countries = [
+        { name: "Afghanistan", iso2: "af", dialCode: "93", flag: "🇦🇫" },
+        { name: "Albania", iso2: "al", dialCode: "355", flag: "🇦🇱" },
+        { name: "Algeria", iso2: "dz", dialCode: "213", flag: "🇩🇿" },
+        { name: "Andorra", iso2: "ad", dialCode: "376", flag: "🇦🇩" },
+        { name: "Angola", iso2: "ao", dialCode: "244", flag: "🇦🇴" },
+        { name: "Antigua and Barbuda", iso2: "ag", dialCode: "1", flag: "🇦🇬" },
+        { name: "Argentina", iso2: "ar", dialCode: "54", flag: "🇦🇷" },
+        { name: "Armenia", iso2: "am", dialCode: "374", flag: "🇦🇲" },
+        { name: "Australia", iso2: "au", dialCode: "61", flag: "🇦🇺" },
+        { name: "Austria", iso2: "at", dialCode: "43", flag: "🇦🇹" },
+        { name: "Azerbaijan", iso2: "az", dialCode: "994", flag: "🇦🇿" },
+        { name: "Bahamas", iso2: "bs", dialCode: "1", flag: "🇧🇸" },
+        { name: "Bahrain", iso2: "bh", dialCode: "973", flag: "🇧🇭" },
+        { name: "Bangladesh", iso2: "bd", dialCode: "880", flag: "🇧🇩" },
+        { name: "Barbados", iso2: "bb", dialCode: "1", flag: "🇧🇧" },
+        { name: "Belarus", iso2: "by", dialCode: "375", flag: "🇧🇾" },
+        { name: "Belgium", iso2: "be", dialCode: "32", flag: "🇧🇪" },
+        { name: "Belize", iso2: "bz", dialCode: "501", flag: "🇧🇿" },
+        { name: "Benin", iso2: "bj", dialCode: "229", flag: "🇧🇯" },
+        { name: "Bhutan", iso2: "bt", dialCode: "975", flag: "🇧🇹" },
+        { name: "Bolivia", iso2: "bo", dialCode: "591", flag: "🇧🇴" },
+        { name: "Bosnia and Herzegovina", iso2: "ba", dialCode: "387", flag: "🇧🇦" },
+        { name: "Botswana", iso2: "bw", dialCode: "267", flag: "🇧🇼" },
+        { name: "Brazil", iso2: "br", dialCode: "55", flag: "🇧🇷" },
+        { name: "Brunei", iso2: "bn", dialCode: "673", flag: "🇧🇳" },
+        { name: "Bulgaria", iso2: "bg", dialCode: "359", flag: "🇧🇬" },
+        { name: "Burkina Faso", iso2: "bf", dialCode: "226", flag: "🇧🇫" },
+        { name: "Burundi", iso2: "bi", dialCode: "257", flag: "🇧🇮" },
+        { name: "Cambodia", iso2: "kh", dialCode: "855", flag: "🇰🇭" },
+        { name: "Cameroon", iso2: "cm", dialCode: "237", flag: "🇨🇲" },
+        { name: "Canada", iso2: "ca", dialCode: "1", flag: "🇨🇦" },
+        { name: "Cape Verde", iso2: "cv", dialCode: "238", flag: "🇨🇻" },
+        { name: "Central African Republic", iso2: "cf", dialCode: "236", flag: "🇨🇫" },
+        { name: "Chad", iso2: "td", dialCode: "235", flag: "🇹🇩" },
+        { name: "Chile", iso2: "cl", dialCode: "56", flag: "🇨🇱" },
+        { name: "China", iso2: "cn", dialCode: "86", flag: "🇨🇳" },
+        { name: "Colombia", iso2: "co", dialCode: "57", flag: "🇨🇴" },
+        { name: "Comoros", iso2: "km", dialCode: "269", flag: "🇰🇲" },
+        { name: "Congo", iso2: "cg", dialCode: "242", flag: "🇨🇬" },
+        { name: "Costa Rica", iso2: "cr", dialCode: "506", flag: "🇨🇷" },
+        { name: "Croatia", iso2: "hr", dialCode: "385", flag: "🇭🇷" },
+        { name: "Cuba", iso2: "cu", dialCode: "53", flag: "🇨🇺" },
+        { name: "Cyprus", iso2: "cy", dialCode: "357", flag: "🇨🇾" },
+        { name: "Czech Republic", iso2: "cz", dialCode: "420", flag: "🇨🇿" },
+        { name: "Democratic Republic of the Congo", iso2: "cd", dialCode: "243", flag: "🇨🇩" },
+        { name: "Denmark", iso2: "dk", dialCode: "45", flag: "🇩🇰" },
+        { name: "Djibouti", iso2: "dj", dialCode: "253", flag: "🇩🇯" },
+        { name: "Dominica", iso2: "dm", dialCode: "1", flag: "🇩🇲" },
+        { name: "Dominican Republic", iso2: "do", dialCode: "1", flag: "🇩🇴" },
+        { name: "Ecuador", iso2: "ec", dialCode: "593", flag: "🇪🇨" },
+        { name: "Egypt", iso2: "eg", dialCode: "20", flag: "🇪🇬" },
+        { name: "El Salvador", iso2: "sv", dialCode: "503", flag: "🇸🇻" },
+        { name: "Equatorial Guinea", iso2: "gq", dialCode: "240", flag: "🇬🇶" },
+        { name: "Eritrea", iso2: "er", dialCode: "291", flag: "🇪🇷" },
+        { name: "Estonia", iso2: "ee", dialCode: "372", flag: "🇪🇪" },
+        { name: "Eswatini", iso2: "sz", dialCode: "268", flag: "🇸🇿" },
+        { name: "Ethiopia", iso2: "et", dialCode: "251", flag: "🇪🇹" },
+        { name: "Fiji", iso2: "fj", dialCode: "679", flag: "🇫🇯" },
+        { name: "Finland", iso2: "fi", dialCode: "358", flag: "🇫🇮" },
+        { name: "France", iso2: "fr", dialCode: "33", flag: "🇫🇷" },
+        { name: "Gabon", iso2: "ga", dialCode: "241", flag: "🇬🇦" },
+        { name: "Gambia", iso2: "gm", dialCode: "220", flag: "🇬🇲" },
+        { name: "Georgia", iso2: "ge", dialCode: "995", flag: "🇬🇪" },
+        { name: "Germany", iso2: "de", dialCode: "49", flag: "🇩🇪" },
+        { name: "Ghana", iso2: "gh", dialCode: "233", flag: "🇬🇭" },
+        { name: "Greece", iso2: "gr", dialCode: "30", flag: "🇬🇷" },
+        { name: "Grenada", iso2: "gd", dialCode: "1", flag: "🇬🇩" },
+        { name: "Guatemala", iso2: "gt", dialCode: "502", flag: "🇬🇹" },
+        { name: "Guinea", iso2: "gn", dialCode: "224", flag: "🇬🇳" },
+        { name: "Guinea-Bissau", iso2: "gw", dialCode: "245", flag: "🇬🇼" },
+        { name: "Guyana", iso2: "gy", dialCode: "592", flag: "🇬🇾" },
+        { name: "Haiti", iso2: "ht", dialCode: "509", flag: "🇭🇹" },
+        { name: "Honduras", iso2: "hn", dialCode: "504", flag: "🇭🇳" },
+        { name: "Hungary", iso2: "hu", dialCode: "36", flag: "🇭🇺" },
+        { name: "Iceland", iso2: "is", dialCode: "354", flag: "🇮🇸" },
+        { name: "India", iso2: "in", dialCode: "91", flag: "🇮🇳" },
+        { name: "Indonesia", iso2: "id", dialCode: "62", flag: "🇮🇩" },
+        { name: "Iran", iso2: "ir", dialCode: "98", flag: "🇮🇷" },
+        { name: "Iraq", iso2: "iq", dialCode: "964", flag: "🇮🇶" },
+        { name: "Ireland", iso2: "ie", dialCode: "353", flag: "🇮🇪" },
+        { name: "Israel", iso2: "il", dialCode: "972", flag: "🇮🇱" },
+        { name: "Italy", iso2: "it", dialCode: "39", flag: "🇮🇹" },
+        { name: "Jamaica", iso2: "jm", dialCode: "1", flag: "🇯🇲" },
+        { name: "Japan", iso2: "jp", dialCode: "81", flag: "🇯🇵" },
+        { name: "Jordan", iso2: "jo", dialCode: "962", flag: "🇯🇴" },
+        { name: "Kazakhstan", iso2: "kz", dialCode: "7", flag: "🇰🇿" },
+        { name: "Kenya", iso2: "ke", dialCode: "254", flag: "🇰🇪" },
+        { name: "Kiribati", iso2: "ki", dialCode: "686", flag: "🇰🇮" },
+        { name: "Kuwait", iso2: "kw", dialCode: "965", flag: "🇰🇼" },
+        { name: "Kyrgyzstan", iso2: "kg", dialCode: "996", flag: "🇰🇬" },
+        { name: "Laos", iso2: "la", dialCode: "856", flag: "🇱🇦" },
+        { name: "Latvia", iso2: "lv", dialCode: "371", flag: "🇱🇻" },
+        { name: "Lebanon", iso2: "lb", dialCode: "961", flag: "🇱🇧" },
+        { name: "Lesotho", iso2: "ls", dialCode: "266", flag: "🇱🇸" },
+        { name: "Liberia", iso2: "lr", dialCode: "231", flag: "🇱🇷" },
+        { name: "Libya", iso2: "ly", dialCode: "218", flag: "🇱🇾" },
+        { name: "Liechtenstein", iso2: "li", dialCode: "423", flag: "🇱🇮" },
+        { name: "Lithuania", iso2: "lt", dialCode: "370", flag: "🇱🇹" },
+        { name: "Luxembourg", iso2: "lu", dialCode: "352", flag: "🇱🇺" },
+        { name: "Madagascar", iso2: "mg", dialCode: "261", flag: "🇲🇬" },
+        { name: "Malawi", iso2: "mw", dialCode: "265", flag: "🇲🇼" },
+        { name: "Malaysia", iso2: "my", dialCode: "60", flag: "🇲🇾" },
+        { name: "Maldives", iso2: "mv", dialCode: "960", flag: "🇲🇻" },
+        { name: "Mali", iso2: "ml", dialCode: "223", flag: "🇲🇱" },
+        { name: "Malta", iso2: "mt", dialCode: "356", flag: "🇲🇹" },
+        { name: "Marshall Islands", iso2: "mh", dialCode: "692", flag: "🇲🇭" },
+        { name: "Mauritania", iso2: "mr", dialCode: "222", flag: "🇲🇷" },
+        { name: "Mauritius", iso2: "mu", dialCode: "230", flag: "🇲🇺" },
+        { name: "Mexico", iso2: "mx", dialCode: "52", flag: "🇲🇽" },
+        { name: "Micronesia", iso2: "fm", dialCode: "691", flag: "🇫🇲" },
+        { name: "Moldova", iso2: "md", dialCode: "373", flag: "🇲🇩" },
+        { name: "Monaco", iso2: "mc", dialCode: "377", flag: "🇲🇨" },
+        { name: "Mongolia", iso2: "mn", dialCode: "976", flag: "🇲🇳" },
+        { name: "Montenegro", iso2: "me", dialCode: "382", flag: "🇲🇪" },
+        { name: "Morocco", iso2: "ma", dialCode: "212", flag: "🇲🇦" },
+        { name: "Mozambique", iso2: "mz", dialCode: "258", flag: "🇲🇿" },
+        { name: "Myanmar", iso2: "mm", dialCode: "95", flag: "🇲🇲" },
+        { name: "Namibia", iso2: "na", dialCode: "264", flag: "🇳🇦" },
+        { name: "Nauru", iso2: "nr", dialCode: "674", flag: "🇳🇷" },
+        { name: "Nepal", iso2: "np", dialCode: "977", flag: "🇳🇵" },
+        { name: "Netherlands", iso2: "nl", dialCode: "31", flag: "🇳🇱" },
+        { name: "New Zealand", iso2: "nz", dialCode: "64", flag: "🇳🇿" },
+        { name: "Nicaragua", iso2: "ni", dialCode: "505", flag: "🇳🇮" },
+        { name: "Niger", iso2: "ne", dialCode: "227", flag: "🇳🇪" },
+        { name: "Nigeria", iso2: "ng", dialCode: "234", flag: "🇳🇬" },
+        { name: "North Korea", iso2: "kp", dialCode: "850", flag: "🇰🇵" },
+        { name: "North Macedonia", iso2: "mk", dialCode: "389", flag: "🇲🇰" },
+        { name: "Norway", iso2: "no", dialCode: "47", flag: "🇳🇴" },
+        { name: "Oman", iso2: "om", dialCode: "968", flag: "🇴🇲" },
+        { name: "Pakistan", iso2: "pk", dialCode: "92", flag: "🇵🇰" },
+        { name: "Palau", iso2: "pw", dialCode: "680", flag: "🇵🇼" },
+        { name: "Panama", iso2: "pa", dialCode: "507", flag: "🇵🇦" },
+        { name: "Papua New Guinea", iso2: "pg", dialCode: "675", flag: "🇵🇬" },
+        { name: "Paraguay", iso2: "py", dialCode: "595", flag: "🇵🇾" },
+        { name: "Peru", iso2: "pe", dialCode: "51", flag: "🇵🇪" },
+        { name: "Philippines", iso2: "ph", dialCode: "63", flag: "🇵🇭" },
+        { name: "Poland", iso2: "pl", dialCode: "48", flag: "🇵🇱" },
+        { name: "Portugal", iso2: "pt", dialCode: "351", flag: "🇵🇹" },
+        { name: "Qatar", iso2: "qa", dialCode: "974", flag: "🇶🇦" },
+        { name: "Romania", iso2: "ro", dialCode: "40", flag: "🇷🇴" },
+        { name: "Russia", iso2: "ru", dialCode: "7", flag: "🇷🇺" },
+        { name: "Rwanda", iso2: "rw", dialCode: "250", flag: "🇷🇼" },
+        { name: "Saint Kitts and Nevis", iso2: "kn", dialCode: "1", flag: "🇰🇳" },
+        { name: "Saint Lucia", iso2: "lc", dialCode: "1", flag: "🇱🇨" },
+        { name: "Saint Vincent and the Grenadines", iso2: "vc", dialCode: "1", flag: "🇻🇨" },
+        { name: "Samoa", iso2: "ws", dialCode: "685", flag: "🇼🇸" },
+        { name: "San Marino", iso2: "sm", dialCode: "378", flag: "🇸🇲" },
+        { name: "Sao Tome and Principe", iso2: "st", dialCode: "239", flag: "🇸🇹" },
+        { name: "Saudi Arabia", iso2: "sa", dialCode: "966", flag: "🇸🇦" },
+        { name: "Senegal", iso2: "sn", dialCode: "221", flag: "🇸🇳" },
+        { name: "Serbia", iso2: "rs", dialCode: "381", flag: "🇷🇸" },
+        { name: "Seychelles", iso2: "sc", dialCode: "248", flag: "🇸🇨" },
+        { name: "Sierra Leone", iso2: "sl", dialCode: "232", flag: "🇸🇱" },
+        { name: "Singapore", iso2: "sg", dialCode: "65", flag: "🇸🇬" },
+        { name: "Slovakia", iso2: "sk", dialCode: "421", flag: "🇸🇰" },
+        { name: "Slovenia", iso2: "si", dialCode: "386", flag: "🇸🇮" },
+        { name: "Solomon Islands", iso2: "sb", dialCode: "677", flag: "🇸🇧" },
+        { name: "Somalia", iso2: "so", dialCode: "252", flag: "🇸🇴" },
+        { name: "South Africa", iso2: "za", dialCode: "27", flag: "🇿🇦" },
+        { name: "South Korea", iso2: "kr", dialCode: "82", flag: "🇰🇷" },
+        { name: "South Sudan", iso2: "ss", dialCode: "211", flag: "🇸🇸" },
+        { name: "Spain", iso2: "es", dialCode: "34", flag: "🇪🇸" },
+        { name: "Sri Lanka", iso2: "lk", dialCode: "94", flag: "🇱🇰" },
+        { name: "Sudan", iso2: "sd", dialCode: "249", flag: "🇸🇩" },
+        { name: "Suriname", iso2: "sr", dialCode: "597", flag: "🇸🇷" },
+        { name: "Sweden", iso2: "se", dialCode: "46", flag: "🇸🇪" },
+        { name: "Switzerland", iso2: "ch", dialCode: "41", flag: "🇨🇭" },
+        { name: "Syria", iso2: "sy", dialCode: "963", flag: "🇸🇾" },
+        { name: "Tajikistan", iso2: "tj", dialCode: "992", flag: "🇹🇯" },
+        { name: "Tanzania", iso2: "tz", dialCode: "255", flag: "🇹🇿" },
+        { name: "Thailand", iso2: "th", dialCode: "66", flag: "🇹🇭" },
+        { name: "Timor-Leste", iso2: "tl", dialCode: "670", flag: "🇹🇱" },
+        { name: "Togo", iso2: "tg", dialCode: "228", flag: "🇹🇬" },
+        { name: "Tonga", iso2: "to", dialCode: "676", flag: "🇹🇴" },
+        { name: "Trinidad and Tobago", iso2: "tt", dialCode: "1", flag: "🇹🇹" },
+        { name: "Tunisia", iso2: "tn", dialCode: "216", flag: "🇹🇳" },
+        { name: "Turkey", iso2: "tr", dialCode: "90", flag: "🇹🇷" },
+        { name: "Turkmenistan", iso2: "tm", dialCode: "993", flag: "🇹🇲" },
+        { name: "Tuvalu", iso2: "tv", dialCode: "688", flag: "🇹🇻" },
+        { name: "Uganda", iso2: "ug", dialCode: "256", flag: "🇺🇬" },
+        { name: "Ukraine", iso2: "ua", dialCode: "380", flag: "🇺🇦" },
+        { name: "United Arab Emirates", iso2: "ae", dialCode: "971", flag: "🇦🇪" },
+        { name: "United Kingdom", iso2: "gb", dialCode: "44", flag: "🇬🇧" },
+        { name: "United States", iso2: "us", dialCode: "1", flag: "🇺🇸" },
+        { name: "Uruguay", iso2: "uy", dialCode: "598", flag: "🇺🇾" },
+        { name: "Uzbekistan", iso2: "uz", dialCode: "998", flag: "🇺🇿" },
+        { name: "Vanuatu", iso2: "vu", dialCode: "678", flag: "🇻🇺" },
+        { name: "Venezuela", iso2: "ve", dialCode: "58", flag: "🇻🇪" },
+        { name: "Vietnam", iso2: "vn", dialCode: "84", flag: "🇻🇳" },
+        { name: "Yemen", iso2: "ye", dialCode: "967", flag: "🇾🇪" },
+        { name: "Zambia", iso2: "zm", dialCode: "260", flag: "🇿🇲" },
+        { name: "Zimbabwe", iso2: "zw", dialCode: "263", flag: "🇿🇼" }
+    ];
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const textInput = document.getElementById('textInput');
-            const groupSizeInput = document.getElementById('groupSize');
-            const countryCodeSelect = document.getElementById('countryCode');
-            const outputContainer = document.getElementById('outputContainer');
-            const countDisplay = document.getElementById('countDisplay');
-            const convertBtn = document.getElementById('convertBtn');
+    const countrySearch = document.getElementById('countrySearch');
+    const dropdownList = document.getElementById('dropdownList');
+    const selectedDialCode = document.getElementById('selectedDialCode');
 
-            // Initialize intl-tel-input for country code dropdown with search
-            const iti = window.intlTelInput(countryCodeSelect, {
-                initialCountry: "auto",
-                geoIpLookup: function(callback) {
-                    fetch('https://ipinfo.io/json?token=your_token_here', { headers: { 'Accept': 'application/json' }})
-                        .then((resp) => resp.json())
-                        .catch(() => ({ country: 'us' }))
-                        .then((resp) => callback(resp.country));
-                },
-                utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
-                dropdownContainer: document.body,
-                preferredCountries: ['us', 'gb', 'sa', 'ru', 'eg', 'za', 'iq', 'ye', 'td', 'pk', 'lv', 'az']
+    countrySearch.addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        dropdownList.innerHTML = '';
+        if (query.length === 0) {
+            dropdownList.style.display = 'none';
+            return;
+        }
+
+        const results = countries.filter(c =>
+            c.name.toLowerCase().includes(query) ||
+            c.iso2.toLowerCase().includes(query) ||
+            c.dialCode.includes(query)
+        );
+
+        results.forEach(c => {
+            const item = document.createElement('div');
+            item.classList.add('dropdown-item');
+            item.innerHTML = `<span class="flag">${c.flag}</span> ${c.name} (+${c.dialCode})`;
+            item.addEventListener('click', () => {
+                countrySearch.value = `${c.flag} ${c.name} (+${c.dialCode})`;
+                selectedDialCode.value = c.dialCode;
+                dropdownList.style.display = 'none';
             });
-
-            convertBtn.addEventListener('click', function () {
-                const text = textInput.value.trim();
-                const groupSize = parseInt(groupSizeInput.value, 10);
-                const countryCode = iti.getSelectedCountryData().dialCode;
-
-                if (!text) {
-                    alert('Please enter text containing phone numbers.');
-                    return;
-                }
-
-                if (isNaN(groupSize) || groupSize <= 0) {
-                    alert('Please enter a valid group size.');
-                    return;
-                }
-
-                // Create regex based on selected country code
-                const regex = new RegExp(`\\+?${countryCode}[ \\d]{4,12}`, 'g'); // Matches country code (with or without +) followed by 4-12 digits
-                const matches = text.match(regex) || [];
-                const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
-
-                // Validate number length (4 to 12 digits after country code, plus country code length)
-                const countryCodeLength = countryCode.length;
-                const validNumbers = cleanedNumbers.filter(num => {
-                    const numberLength = num.length - countryCodeLength;
-                    return numberLength >= 4 && numberLength <= 12;
-                });
-
-                // Use a Set to remove duplicates
-                const uniqueNumbers = [...new Set(validNumbers)];
-
-                if (uniqueNumbers.length === 0) {
-                    alert('No valid phone numbers found in the text.');
-                    return;
-                }
-
-                outputContainer.innerHTML = ''; // Clear previous output
-                const groups = [];
-                for (let i = 0; i < uniqueNumbers.length; i += groupSize) {
-                    groups.push(uniqueNumbers.slice(i, i + groupSize));
-                }
-
-                groups.forEach((group, index) => {
-                    const groupDiv = document.createElement('div');
-                    groupDiv.classList.add('phone-group');
-
-                    const groupText = document.createElement('textarea');
-                    groupText.classList.add('form-control');
-                    groupText.rows = 3;
-                    groupText.readOnly = true;
-                    // Add "+" before each number in the group
-                    groupText.value = group.map(num => `+${num}`).join(',');
-
-                    const copyBtn = document.createElement('button');
-                    copyBtn.classList.add('btn', 'btn-secondary', 'copy-btn');
-                    copyBtn.textContent = `Copy Group ${index + 1}`;
-                    copyBtn.addEventListener('click', function () {
-                        groupText.select();
-                        document.execCommand('copy');
-                        alert(`Group ${index + 1} copied to clipboard.`);
-                    });
-
-                    groupDiv.appendChild(groupText);
-                    groupDiv.appendChild(copyBtn);
-                    outputContainer.appendChild(groupDiv);
-                });
-
-                countDisplay.textContent = `Total Count of Unique Phone Numbers: ${uniqueNumbers.length}`;
-            });
+            dropdownList.appendChild(item);
         });
-    </script>
-</body>
 
+        dropdownList.style.display = results.length ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.dropdown-container')) {
+            dropdownList.style.display = 'none';
+        }
+    });
+
+    document.getElementById('convertBtn').addEventListener('click', function () {
+        const text = document.getElementById('textInput').value.trim();
+        const groupSize = parseInt(document.getElementById('groupSize').value, 10);
+        const countryCode = selectedDialCode.value;
+
+        const outputContainer = document.getElementById('outputContainer');
+        const countDisplay = document.getElementById('countDisplay');
+
+        if (!text) {
+            alert('Please enter text containing phone numbers.');
+            return;
+        }
+
+        if (!countryCode) {
+            alert('Please select a country code.');
+            return;
+        }
+
+        if (isNaN(groupSize) || groupSize <= 0) {
+            alert('Please enter a valid group size.');
+            return;
+        }
+
+        const regex = new RegExp(`\\+?${countryCode}[ \\d]{4,12}`, 'g');
+        const matches = text.match(regex) || [];
+        const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
+
+        const validNumbers = cleanedNumbers.filter(num => {
+            const numberLength = num.length - countryCode.length;
+            return numberLength >= 4 && numberLength <= 12;
+        });
+
+        const uniqueNumbers = [...new Set(validNumbers)];
+
+        if (uniqueNumbers.length === 0) {
+            alert('No valid phone numbers found in the text.');
+            return;
+        }
+
+        outputContainer.innerHTML = '';
+        const groups = [];
+        for (let i = 0; i < uniqueNumbers.length; i += groupSize) {
+            groups.push(uniqueNumbers.slice(i, i + groupSize));
+        }
+
+        groups.forEach((group, index) => {
+            const groupDiv = document.createElement('div');
+            groupDiv.classList.add('phone-group');
+
+            const groupText = document.createElement('textarea');
+            groupText.classList.add('form-control');
+            groupText.rows = 3;
+            groupText.readOnly = true;
+            groupText.value = group.map(num => `+${num}`).join(',');
+
+            const copyBtn = document.createElement('button');
+            copyBtn.classList.add('btn', 'btn-secondary', 'copy-btn');
+            copyBtn.textContent = `Copy Group ${index + 1}`;
+            copyBtn.addEventListener('click', function () {
+                navigator.clipboard.writeText(groupText.value)
+                    .then(() => alert(`Group ${index + 1} copied to clipboard.`))
+                    .catch(() => alert('Failed to copy to clipboard.'));
+            });
+
+            groupDiv.appendChild(groupText);
+            groupDiv.appendChild(copyBtn);
+            outputContainer.appendChild(groupDiv);
+        });
+
+        countDisplay.textContent = `Total Count of Unique Phone Numbers: ${uniqueNumbers.length}`;
+    });
+</script>
+
+</body>
 </html>
