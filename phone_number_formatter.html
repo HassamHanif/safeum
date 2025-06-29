@@ -7,6 +7,8 @@
     <title>Phone Number Formatter</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- intl-tel-input CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
     <style>
         .min-vh-50 {
             min-height: 50vh;
@@ -31,6 +33,11 @@
         textarea {
             resize: none;
         }
+
+        /* Adjust intl-tel-input dropdown width */
+        .iti {
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -46,19 +53,8 @@
             <input type="number" id="groupSize" class="form-control" placeholder="Enter group size (e.g., 5)">
         </div>
         <div class="mb-3">
-            <label for="countryCode" class="form-label">Select country code:</label>
-            <select id="countryCode" class="form-select">
-                <option value="994">Azerbaijan (+994)</option>
-                <option value="92">Pakistan (+92)</option>
-                <option value="371">Latvia (+371)</option>
-                <option value="966">Saudi Arabia (+966)</option>
-                <option value="967">Yemen (+967)</option>
-                <option value="7">Russia (+7)</option>
-                <option value="20">Egypt (+20)</option>
-                <option value="235">Chad (+235)</option>
-                <option value="27">South Africa (+27)</option>
-                <option value="964">Iraq (+964)</option>
-            </select>
+            <label for="countryCode" class="form-label">Select country code (type to search):</label>
+            <select id="countryCode" class="form-select"></select>
         </div>
         <div class="mb-3">
             <button id="convertBtn" class="btn btn-primary w-100">Format Phone Numbers</button>
@@ -69,6 +65,9 @@
 
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- intl-tel-input JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -79,10 +78,24 @@
             const countDisplay = document.getElementById('countDisplay');
             const convertBtn = document.getElementById('convertBtn');
 
+            // Initialize intl-tel-input for country code dropdown with search
+            const iti = window.intlTelInput(countryCodeSelect, {
+                initialCountry: "auto",
+                geoIpLookup: function(callback) {
+                    fetch('https://ipinfo.io/json?token=your_token_here', { headers: { 'Accept': 'application/json' }})
+                        .then((resp) => resp.json())
+                        .catch(() => ({ country: 'us' }))
+                        .then((resp) => callback(resp.country));
+                },
+                utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
+                dropdownContainer: document.body,
+                preferredCountries: ['us', 'gb', 'sa', 'ru', 'eg', 'za', 'iq', 'ye', 'td', 'pk', 'lv', 'az']
+            });
+
             convertBtn.addEventListener('click', function () {
                 const text = textInput.value.trim();
                 const groupSize = parseInt(groupSizeInput.value, 10);
-                const countryCode = countryCodeSelect.value;
+                const countryCode = iti.getSelectedCountryData().dialCode;
 
                 if (!text) {
                     alert('Please enter text containing phone numbers.');
@@ -95,46 +108,15 @@
                 }
 
                 // Create regex based on selected country code
-                let regex;
-                let expectedLength;
-                if (countryCode === '994') {
-                    regex = /994[ \d]{8,}/g; // Azerbaijan: +994 followed by 9 digits
-                    expectedLength = 12;
-                } else if (countryCode === '92') {
-                    regex = /92[ \d]{9,}/g; // Pakistan: +92 followed by 10 digits
-                    expectedLength = 12;
-                } else if (countryCode === '371') {
-                    regex = /371[ \d]{8}/g; // Latvia: +371 followed by exactly 8 digits
-                    expectedLength = 11;
-                } else if (countryCode === '966') {
-                    regex = /966[ \d]{8,}/g; // Saudi Arabia: +966 followed by 9 digits
-                    expectedLength = 12;
-                } else if (countryCode === '967') {
-                    regex = /967[ \d]{8,}/g; // Yemen: +967 followed by 9 digits
-                    expectedLength = 12;
-                } else if (countryCode === '7') {
-                    regex = /7[ \d]{9,}/g; // Russia: +7 followed by 10 digits
-                    expectedLength = 11;
-                } else if (countryCode === '20') {
-                    regex = /20[ \d]{8,}/g; // Egypt: +20 followed by 10 digits
-                    expectedLength = 12;
-                } else if (countryCode === '235') {
-                    regex = /235[ \d]{7,}/g; // Chad: +235 followed by 8 digits
-                    expectedLength = 11;
-                } else if (countryCode === '27') {
-                    regex = /27[ \d]{8,}/g; // South Africa: +27 followed by 9 digits
-                    expectedLength = 11;
-                } else if (countryCode === '964') {
-                    regex = /964[ \d]{8,}/g; // Iraq: +964 followed by 9 digits
-                    expectedLength = 12;
-                }
-
+                const regex = new RegExp(`\\+?${countryCode}[ \\d]{4,12}`, 'g'); // Matches country code (with or without +) followed by 4-12 digits
                 const matches = text.match(regex) || [];
                 const cleanedNumbers = matches.map(num => num.replace(/[ +]/g, ''));
 
-                // Validate number length based on country code
+                // Validate number length (4 to 12 digits after country code, plus country code length)
+                const countryCodeLength = countryCode.length;
                 const validNumbers = cleanedNumbers.filter(num => {
-                    return num.length === expectedLength;
+                    const numberLength = num.length - countryCodeLength;
+                    return numberLength >= 4 && numberLength <= 12;
                 });
 
                 // Use a Set to remove duplicates
