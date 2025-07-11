@@ -38,6 +38,64 @@
             font-size: 16px;
             font-weight: bold;
         }
+
+        /* Progress bar styles */
+        #progress {
+            width: 100%;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: block;
+        }
+
+        #progressFill {
+            height: 100%;
+            background-color: #0d6efd;
+            width: 0;
+            transition: width 0.3s ease-in-out; /* Smooth transition effect */
+        }
+
+        /* Popup notification styles */
+        #notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            display: none;
+            max-width: 300px;
+            z-index: 1000;
+            text-align: center;
+            position: relative;
+        }
+
+        #notification.show {
+            display: block;
+        }
+
+        #notification .close-btn {
+            position: absolute;
+            top: 50%;
+            right: 15px; /* Centered right side */
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 18px;
+            color: #721c24;
+            background: none;
+            border: none;
+            padding: 0;
+        }
     </style>
 </head>
 
@@ -50,13 +108,30 @@
             </div>
         </div>
         <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" id="adminUid" class="form-control" placeholder="Enter Admin UID (optional)">
+            </div>
+        </div>
+        <div class="row mb-3">
             <div class="col-md-2 d-flex align-items-center">
                 <button onclick="checkNumbers()" class="btn btn-primary w-100">Check Numbers</button>
             </div>
         </div>
 
-        <!-- Display total number of entered numbers -->
+        <!-- Display total number of entered numbers and progress -->
         <div id="totalCount" class="count text-center"></div>
+        <div id="progress">
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
+            <span id="progressText">Checked [0/?]</span>
+        </div>
+
+        <!-- Notification popup -->
+        <div id="notification">
+            <span id="notificationText"></span>
+            <button class="close-btn" onclick="closeNotification()">×</button>
+        </div>
 
         <div id="results">
             <div class="result-box">
@@ -78,9 +153,71 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        let notificationTimeout;
+        let ws;
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            // Auto-hide after 10 seconds
+            notificationTimeout = setTimeout(() => {
+                notification.classList.remove('show');
+            }, 10000);
+        }
+
+        function closeNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('show');
+            clearTimeout(notificationTimeout);
+        }
+
+        function clearResults() {
+            document.getElementById('registered').value = '';
+            document.getElementById('notRegistered').value = '';
+            document.getElementById('registeredCount').textContent = '';
+            document.getElementById('notRegisteredCount').textContent = '';
+            document.getElementById('progressText').textContent = 'Checked [0/?]';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        function updateProgress(current, total) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const percentage = (current / total) * 100;
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `Checked [${current}/${total}]`;
+        }
+
+        async function validateAdmin(adminUid) {
+            try {
+                const response = await fetch('https://wa-tg-b8c29149a45c.herokuapp.com/validate-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminUid })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to validate admin UID');
+                }
+
+                const { isAdmin } = await response.json();
+                return isAdmin;
+            } catch (error) {
+                console.error('Error validating admin UID:', error);
+                return false;
+            }
+        }
+
         async function checkNumbers() {
-            // Get the input value and split by commas or newlines
+            // Clear previous results
+            clearResults();
+
+            // Get the input values
             const input = document.getElementById('numbers').value;
+            const adminUid = document.getElementById('adminUid').value.trim();
+
             const numbers = input
                 .split(/[\n,]/) // Split by newlines or commas
                 .map(n => n.trim()) // Trim whitespace from each number
@@ -91,23 +228,72 @@
             document.getElementById('totalCount').textContent = `Total Numbers: ${totalCount}`;
 
             if (totalCount === 0) {
-                alert('Please enter at least one phone number.');
+                showNotification('Please enter at least one phone number.');
                 return;
             }
 
+            // Validate admin UID
+            if (adminUid) {
+                const isAdmin = await validateAdmin(adminUid);
+                if (isAdmin) {
+                    showNotification('Admin UID applied successfully.');
+                } else {
+                    showNotification('Invalid Admin UID.');
+                }
+            }
+
+            // Generate a unique session ID
+            const sessionId = Math.random().toString(36).substring(2, 15);
+
+            // Initialize WebSocket
+            ws = new WebSocket(`wss://wa-tg-b8c29149a45c.herokuapp.com?sessionId=${sessionId}`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                // Start checking numbers after WebSocket is established
+                startChecking(numbers, adminUid, sessionId);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'progress') {
+                    updateProgress(data.currentProgress, data.totalNumbers);
+                } else if (data.type === 'error') {
+                    showNotification(data.message);
+                    ws.close();
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket closed');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showNotification('WebSocket error. Please try again.');
+            };
+        }
+
+        async function startChecking(numbers, adminUid, sessionId) {
             try {
                 const response = await fetch('https://wa-tg-b8c29149a45c.herokuapp.com/check', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ numbers })
+                    body: JSON.stringify({ numbers, adminUid, sessionId })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json();
+                    showNotification(errorData.error || `HTTP error! status: ${response.status}`);
+                    if (ws) ws.close();
+                    return;
                 }
 
-                const { registered, notRegistered } = await response.json();
-                
+                const { registered, notRegistered, totalNumbers } = await response.json();
+
+                // Update final progress
+                updateProgress(totalNumbers, totalNumbers);
+
                 // Display registered and not registered numbers
                 document.getElementById('registered').value = registered.join('\n');
                 document.getElementById('notRegistered').value = notRegistered.join('\n');
@@ -115,9 +301,12 @@
                 // Display counts for registered and not registered numbers
                 document.getElementById('registeredCount').textContent = `Registered Numbers: ${registered.length}`;
                 document.getElementById('notRegisteredCount').textContent = `Not Registered Numbers: ${notRegistered.length}`;
+
+                if (ws) ws.close();
             } catch (error) {
                 console.error('Error checking numbers:', error);
-                alert('Error checking numbers. Please try again.');
+                showNotification('Error checking numbers. Please try again.');
+                if (ws) ws.close();
             }
         }
 
@@ -125,14 +314,14 @@
             const registeredText = document.getElementById('registered');
             registeredText.select();
             document.execCommand('copy');
-            alert('Registered numbers copied to clipboard.');
+            showNotification('Registered numbers copied to clipboard.');
         });
 
         document.getElementById('copyNotRegistered').addEventListener('click', function () {
             const notRegisteredText = document.getElementById('notRegistered');
             notRegisteredText.select();
             document.execCommand('copy');
-            alert('Not registered numbers copied to clipboard.');
+            showNotification('Not registered numbers copied to clipboard.');
         });
     </script>
 </body>
