@@ -192,7 +192,7 @@
 
         async function validatePremiumKey(premiumKey) {
             try {
-                const response = await fetch('https://wa-tg-b8c29149a45c.herokuapp.com/validate-premium', {
+                const response = await fetch('https://wa-tg-af4097dff789.herokuapp.com/validate-premium', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ premiumKey })
@@ -278,7 +278,7 @@
 
         async function startChecking(numbers, sessionId, premiumKey) {
             try {
-                const response = await fetch('https://wa-tg-b8c29149a45c.herokuapp.com/check', {
+                const response = await fetch('https://wa-tg-af4097dff789.herokuapp.com/check', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ numbers, sessionId, premiumKey })
