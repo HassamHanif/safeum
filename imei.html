@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random IMEI Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #error {
+            color: red;
+            margin-bottom: 10px;
+            display: none;
+        }
+        textarea {
+            height: 200px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Random IMEI Generator</h2>
+        <div id="error"></div>
+        <label for="sampleImei">Sample IMEI (15 digits):</label>
+        <input type="text" id="sampleImei" maxlength="15" placeholder="Enter 15-digit IMEI">
+        
+        <label for="digitsToChange">Last digits to change (1-5):</label>
+        <input type="number" id="digitsToChange" min="1" max="5" placeholder="e.g., 3">
+        
+        <label for="totalImei">Total IMEI numbers to generate:</label>
+        <input type="number" id="totalImei" min="1" placeholder="e.g., 10">
+        
+        <button onclick="generateImei()">Generate IMEIs</button>
+        
+        <label for="output">Generated IMEIs:</label>
+        <textarea id="output" readonly></textarea>
+        <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    </div>
+
+    <script>
+        function generateImei() {
+            const sampleImei = document.getElementById('sampleImei').value;
+            const digitsToChange = parseInt(document.getElementById('digitsToChange').value);
+            const totalImei = parseInt(document.getElementById('totalImei').value);
+            const errorDiv = document.getElementById('error');
+            const output = document.getElementById('output');
+
+            // Reset error and output
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            output.value = '';
+
+            // Validation
+            if (!/^\d{15}$/.test(sampleImei)) {
+                errorDiv.textContent = 'Please enter a valid 15-digit IMEI number.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            if (!Number.isInteger(digitsToChange) || digitsToChange < 1 || digitsToChange > 5) {
+                errorDiv.textContent = 'Please enter a number between 1 and 4 for digits to change.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            const maxLimit = Math.pow(10, digitsToChange) - 1;
+            if (!Number.isInteger(totalImei) || totalImei < 1 || totalImei > maxLimit) {
+                errorDiv.textContent = `Please enter a number between 1 and ${maxLimit} for total IMEI numbers.`;
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Generate unique random endings
+            const prefix = sampleImei.slice(0, 15 - digitsToChange);
+            const generatedNumbers = new Set();
+            while (generatedNumbers.size < totalImei) {
+                const randomEnd = Math.floor(Math.random() * Math.pow(10, digitsToChange))
+                    .toString().padStart(digitsToChange, '0');
+                generatedNumbers.add(randomEnd);
+            }
+
+            // Combine prefix with random endings
+            const imeis = Array.from(generatedNumbers).map(end => prefix + end);
+            output.value = imeis.join('\n');
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('output');
+            output.select();
+            try {
+                document.execCommand('copy');
+                alert('Copied to clipboard!');
+            } catch (err) {
+                alert('Failed to copy to clipboard.');
+            }
+        }
+    </script>
+</body>
+</html>
